@@ -1,0 +1,30 @@
+services:
+  fireproxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fireproxy:local
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      LISTEN_ADDR: ":8080"
+      UPSTREAM_BASE_URL: "${UPSTREAM_BASE_URL:-https://api.fireworks.ai}"
+      UPSTREAM_API_KEY: "${UPSTREAM_API_KEY}"
+      API_KEYS: "${API_KEYS}"
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-api.example.com,localhost,127.0.0.1}"
+      ALLOWED_MODELS: "${ALLOWED_MODELS:-kimi-k2p5-turbo,accounts/fireworks/routers/kimi-k2p5-turbo}"
+      PUBLIC_MODEL_ID: "${PUBLIC_MODEL_ID:-kimi-k2p5-turbo}"
+      UPSTREAM_MODEL_ID: "${UPSTREAM_MODEL_ID:-accounts/fireworks/routers/kimi-k2p5-turbo}"
+      REQUEST_BODY_LIMIT_BYTES: "${REQUEST_BODY_LIMIT_BYTES:-2097152}"
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - fireproxy
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - "${CLOUDFLARED_TOKEN}"
